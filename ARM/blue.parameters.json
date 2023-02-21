@@ -1,0 +1,45 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "vmSku": {
+        "value": "Standard_A2"
+      },
+      "windowsOSVersion": {
+        "value": "2016-Datacenter"
+      },
+      "vmssName": {
+        "value": "NIMCC-BLU"
+      },
+      "blueOrGreen": {
+        "value": "blue"
+      },      
+      "instanceCount": {
+        "value": 1
+      },
+      "_artifactsLocation": {
+        "value": "https://{your storage account name}.blob.core.windows.net/vmssdemo"
+      },
+      "powershelldscZip": {
+        "value": "/DSC/IISInstall.ps1.zip"
+      },
+      "webDeployPackage": {
+        "value": "/WebDeploy/DefaultASPWebApp.v7.0.zip"
+      },
+      "powershelldscUpdateTagVersion": {
+        "value": "7.0"
+      },
+      "virtualNetworkName":{
+        "value": "nimcc-bluegreen-vnet"
+      },
+      "loadBalancerName":{
+        "value": "nimcc-bluegreen-lb"
+      },
+      "au":{
+        "value": "vmssadmin"
+      },
+      "ap":{
+        "value": "{your VMSS password}"
+      }      
+    }
+  }
