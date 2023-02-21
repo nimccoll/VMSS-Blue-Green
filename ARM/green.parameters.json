@@ -24,10 +24,10 @@
         "value": "/DSC/IISInstall.ps1.zip"
       },
       "webDeployPackage": {
-        "value": "/WebDeploy/DefaultASPWebApp.v8.0.zip"
+        "value": "/WebDeploy/DefaultASPWebApp.v2.0.zip"
       },
       "powershelldscUpdateTagVersion": {
-        "value": "8.0"
+        "value": "2.0"
       },
       "virtualNetworkName":{
         "value": "nimcc-bluegreen-vnet"
