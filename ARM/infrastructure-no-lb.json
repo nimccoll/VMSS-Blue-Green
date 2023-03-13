@@ -1,0 +1,157 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "location": {
+        "type": "string",
+        "defaultValue": "[resourceGroup().location]",
+        "metadata": {
+          "description": "Location for all resources."
+        }
+      },
+      "virtualNetworkName":{
+        "type": "string",
+        "metadata": {
+            "description": "Virtual network name"
+        }
+      },
+      "loadBalancerName":{
+        "type":"string",
+        "metadata":{
+            "description": "Load balancer name"
+        }
+      } 
+    },
+    "variables": {
+      "longNamingInfix": "[toLower(parameters('loadBalancerName'))]",
+      "addressPrefix": "10.0.0.0/16",
+      "blueSubnetName": "blueSubnet",
+      "greenSubnetName": "greenSubnet",
+      "bluesubnetPrefix": "10.0.0.0/24",
+      "greensubnetPrefix": "10.0.1.0/24",
+      "nsgName": "[concat(parameters('virtualNetworkName'), '-nsg')]",
+      "natGatewayName": "[concat(parameters('virtualNetworkName'), '-gateway')]",
+      "natGatewayID":"[resourceId('Microsoft.Network/natGateways', variables('natGatewayName'))]",
+      "natGatewayPublicIPAddressName":"[concat(variables('natGatewayName'), '-pip')]",
+      "natGatewayPublicIPAddressID":"[resourceId('Microsoft.Network/publicIPAddresses', variables('natGatewayPublicIPAddressName'))]",
+      "loadBalancerPublicIPAddressName": "[concat(parameters('loadBalancerName'), '-pip')]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Network/publicIPAddresses",
+            "name": "[variables('loadBalancerPublicIPAddressName')]",
+            "location": "[parameters('location')]",
+            "apiVersion": "2022-07-01",
+            "sku": {
+              "name": "Standard",
+              "tier": "Regional"
+            },
+            "properties": {
+              "publicIPAllocationMethod": "Static",
+              "dnsSettings": {
+                "domainNameLabel": "[variables('longNamingInfix')]"
+              }
+            }
+        },
+          {
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2022-07-01",
+            "name": "[variables('natGatewayPublicIPAddressName')]",
+            "location": "[parameters('location')]",
+            "sku": {
+                "name": "Standard",
+                "tier": "Regional"
+            },
+            "properties": {
+                "publicIPAllocationMethod": "Static"
+            }
+          },      
+          {
+            "type": "Microsoft.Network/natGateways",
+            "apiVersion": "2022-07-01",
+            "name": "[variables('natGatewayName')]",
+            "location": "[parameters('location')]",
+            "sku": {
+                "name": "Standard",
+                "tier": "Regional"
+            },
+            "dependsOn": [
+              "[concat('Microsoft.Network/publicIPAddresses/', variables('natGatewayPublicIPAddressName'))]"
+            ],            
+            "properties": {
+                "idleTimeoutInMinutes": 15,
+                "publicIpAddresses": [
+                    {
+                        "id": "[variables('natGatewayPublicIPAddressID')]"
+                    }
+                ]
+            }
+        },        
+      {
+        "type": "Microsoft.Network/virtualNetworks",
+        "name": "[parameters('virtualNetworkName')]",
+        "location": "[parameters('location')]",
+        "apiVersion": "2016-03-30",
+        "dependsOn": [
+          "[concat('Microsoft.Network/natGateways/', variables('natGatewayName'))]"
+        ],          
+        "properties": {
+          "addressSpace": {
+            "addressPrefixes": [
+              "[variables('addressPrefix')]"
+            ]
+          },
+          "subnets": [
+            {
+              "name": "[variables('blueSubnetName')]",
+              "properties": {
+                "addressPrefix": "[variables('blueSubnetPrefix')]",
+                "natGateway": {
+                    "id": "[variables('natGatewayID')]"
+                }
+              }
+            },
+            {
+                "name": "[variables('greenSubnetName')]",
+                "properties": {
+                  "addressPrefix": "[variables('greenSubnetPrefix')]",
+                  "natGateway": {
+                      "id": "[variables('natGatewayID')]"
+                  }
+                }
+              } 
+          ]
+        }
+      },
+      {
+        "type": "Microsoft.Network/networkSecurityGroups",
+        "apiVersion": "2021-08-01",
+        "name": "[variables('nsgName')]",
+        "location": "[parameters('location')]",
+        "properties": {
+          "securityRules": [
+            {
+              "name": "AllowHTTPInbound",
+              "properties": {
+                "protocol": "*",
+                "sourcePortRange": "*",
+                "destinationPortRange": "80",
+                "sourceAddressPrefix": "Internet",
+                "destinationAddressPrefix": "*",
+                "access": "Allow",
+                "priority": 100,
+                "direction": "Inbound"
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "outputs": {
+      "applicationUrl": {
+        "type": "string",
+        "value": "[concat('http://', reference(variables('loadBalancerPublicIPAddressName')).dnsSettings.fqdn, '/MyApp')]"
+      }
+    }
+  }
+  
